@@ -5,31 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat Histórico</title>
     
-    <script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/vapi.browser.js"></script>
+    <script src="https://unpkg.com/@vapi-ai/web@2.0.0/dist/vapi.browser.js"></script>
 
     <style>
-        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f1f5f9; }
-        .box { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 15px rgba(0,0,0,0.1); text-align: center; width: 300px; }
-        button { background: #2563eb; color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; }
-        button:disabled { background: #cbd5e1; cursor: not-allowed; }
-        #status { margin-top: 15px; font-size: 0.8rem; color: #64748b; }
-        #error-box { color: red; font-size: 0.7rem; margin-top: 10px; display: none; background: #fee2e2; padding: 10px; border-radius: 5px; }
+        body { font-family: -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #1a1a1a; color: white; }
+        .box { background: #262626; padding: 40px; border-radius: 24px; box-shadow: 0 20px 25px rgba(0,0,0,0.3); text-align: center; width: 90%; max-width: 350px; }
+        h2 { margin-bottom: 30px; font-size: 1.8rem; }
+        button { background: #3b82f6; color: white; border: none; padding: 18px; width: 100%; border-radius: 12px; font-weight: bold; font-size: 1.1rem; cursor: pointer; transition: 0.3s; }
+        button:disabled { background: #404040; color: #737373; cursor: wait; }
+        #status { margin-top: 20px; font-size: 0.9rem; color: #a3a3a3; font-weight: 500; }
+        #error-box { color: #f87171; font-size: 0.75rem; margin-top: 15px; display: none; background: rgba(127, 29, 29, 0.3); padding: 12px; border-radius: 8px; border: 1px solid #7f1d1d; }
     </style>
 </head>
 <body>
 
     <div class="box">
         <h2>Personaje Histórico</h2>
-        <button id="mainBtn" disabled>Cargando...</button>
-        <div id="status">Iniciando sistema...</div>
+        <button id="mainBtn" disabled>Cargando sistema...</button>
+        <div id="status">Buscando librería Vapi...</div>
         <div id="error-box"></div>
     </div>
 
     <script>
-        // --- TUS CLAVES AQUÍ ---
-        const PUBLIC_KEY = '30fad02a-d560-44bc-a6ae-d992ec97cb66';
+        // --- TUS CLAVES (Verifica que no tengan espacios al final) ---
+        const PUBLIC_KEY = '30fad02a-d560-44bc-a6ae-d992ec97cb66'; 
         const ASSISTANT_ID = '110d7e91-85e0-401f-93b0-90697d22b5c3';
-        // -----------------------
+        // ------------------------------------------------------------
 
         const btn = document.getElementById('mainBtn');
         const status = document.getElementById('status');
@@ -37,61 +38,70 @@
 
         let vapi = null;
         let activa = false;
+        let intentos = 0;
 
-        // Función para intentar conectar con Vapi
-        function inicializar() {
+        // FUNCIÓN DETECTIVE: Busca la librería cada medio segundo
+        function buscarLibreria() {
+            intentos++;
+            // Vapi suele guardarse en window.Vapi o window.vapiSDK
+            const SDK = window.Vapi || window.vapiSDK;
+
+            if (SDK) {
+                console.log("¡Librería encontrada!");
+                iniciarApp(SDK);
+            } else if (intentos < 10) {
+                status.innerText = "Reintentando conexión (" + intentos + "/10)...";
+                setTimeout(buscarLibreria, 500);
+            } else {
+                status.innerText = "Fallo al cargar";
+                errBox.style.display = "block";
+                errBox.innerText = "No se detectó Vapi. Intenta abrir este link en una PESTAÑA DE INCÓGNITO para limpiar la caché de GitHub.";
+            }
+        }
+
+        function iniciarApp(SDK) {
             try {
-                // Intentamos encontrar la librería en cualquier rincón del navegador
-                const SDK = window.Vapi;
-                
-                if (!SDK) {
-                    status.innerText = "Error: Librería no encontrada";
-                    errBox.style.display = "block";
-                    errBox.innerText = "El navegador no pudo cargar el archivo Vapi. Revisa tu conexión o usa Chrome.";
-                    return;
-                }
-
                 vapi = new SDK(PUBLIC_KEY);
-                btn.innerText = "Hablar ahora";
+                btn.innerText = "Iniciar Conversación";
                 btn.disabled = false;
-                status.innerText = "Sistema Listo";
+                status.innerText = "SISTEMA LISTO";
 
-                // Eventos
                 vapi.on('call-start', () => {
                     activa = true;
                     btn.innerText = "Terminar Charla";
-                    status.innerText = "En línea con el personaje";
+                    btn.style.background = "#ef4444";
+                    status.innerText = "CONECTADO";
                 });
 
                 vapi.on('call-end', () => {
                     activa = false;
-                    btn.innerText = "Hablar ahora";
-                    status.innerText = "Llamada finalizada";
+                    btn.innerText = "Iniciar Conversación";
+                    btn.style.background = "#3b82f6";
+                    status.innerText = "DESCONECTADO";
                 });
 
                 vapi.on('error', (e) => {
                     errBox.style.display = "block";
-                    errBox.innerText = "Error de Vapi: " + JSON.stringify(e);
+                    errBox.innerText = "Error de Vapi: " + (e.message || "Problema de conexión");
                 });
-
             } catch (e) {
                 errBox.style.display = "block";
-                errBox.innerText = "Fallo crítico: " + e.message;
+                errBox.innerText = "Error de inicio: " + e.message;
             }
         }
-
-        // Ejecutar cuando la página termine de cargar
-        window.onload = inicializar;
 
         btn.onclick = () => {
             if (!vapi) return;
             if (activa) {
                 vapi.stop();
             } else {
-                status.innerText = "Llamando...";
+                status.innerText = "LLAMANDO...";
                 vapi.start(ASSISTANT_ID);
             }
         };
+
+        // Arrancamos la búsqueda
+        buscarLibreria();
     </script>
 </body>
 </html>
