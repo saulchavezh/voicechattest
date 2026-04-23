@@ -4,55 +4,94 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat Histórico</title>
+    
     <script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/vapi.browser.js"></script>
+
     <style>
-        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f0f2f5; }
-        .card { background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; width: 80%; }
-        button { background-color: #007bff; color: white; border: none; padding: 15px 30px; font-size: 1.2rem; border-radius: 50px; cursor: pointer; transition: 0.3s; }
-        button.active { background-color: #dc3545; }
-        .status { margin-top: 20px; color: #666; font-style: italic; }
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f1f5f9; }
+        .box { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 15px rgba(0,0,0,0.1); text-align: center; width: 300px; }
+        button { background: #2563eb; color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        button:disabled { background: #cbd5e1; cursor: not-allowed; }
+        #status { margin-top: 15px; font-size: 0.8rem; color: #64748b; }
+        #error-box { color: red; font-size: 0.7rem; margin-top: 10px; display: none; background: #fee2e2; padding: 10px; border-radius: 5px; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h1>Personaje Histórico</h1>
-        <p>Pulsa el botón y di "Hola"</p>
-        <button id="vapiButton">Hablar con el Personaje</button>
-        <div id="status" class="status">Desconectado</div>
+    <div class="box">
+        <h2>Personaje Histórico</h2>
+        <button id="mainBtn" disabled>Cargando...</button>
+        <div id="status">Iniciando sistema...</div>
+        <div id="error-box"></div>
     </div>
 
     <script>
-        // CONFIGURACIÓN: Pon aquí tus datos de Vapi
-        const vapi = new Vapi('30fad02a-d560-44bc-a6ae-d992ec97cb66');
-        const assistantId = '110d7e91-85e0-401f-93b0-90697d22b5c3';
+        // --- TUS CLAVES AQUÍ ---
+        const PUBLIC_KEY = '30fad02a-d560-44bc-a6ae-d992ec97cb66';
+        const ASSISTANT_ID = '110d7e91-85e0-401f-93b0-90697d22b5c3';
+        // -----------------------
 
-        const btn = document.getElementById('vapiButton');
+        const btn = document.getElementById('mainBtn');
         const status = document.getElementById('status');
-        let isActive = false;
+        const errBox = document.getElementById('error-box');
+
+        let vapi = null;
+        let activa = false;
+
+        // Función para intentar conectar con Vapi
+        function inicializar() {
+            try {
+                // Intentamos encontrar la librería en cualquier rincón del navegador
+                const SDK = window.Vapi;
+                
+                if (!SDK) {
+                    status.innerText = "Error: Librería no encontrada";
+                    errBox.style.display = "block";
+                    errBox.innerText = "El navegador no pudo cargar el archivo Vapi. Revisa tu conexión o usa Chrome.";
+                    return;
+                }
+
+                vapi = new SDK(PUBLIC_KEY);
+                btn.innerText = "Hablar ahora";
+                btn.disabled = false;
+                status.innerText = "Sistema Listo";
+
+                // Eventos
+                vapi.on('call-start', () => {
+                    activa = true;
+                    btn.innerText = "Terminar Charla";
+                    status.innerText = "En línea con el personaje";
+                });
+
+                vapi.on('call-end', () => {
+                    activa = false;
+                    btn.innerText = "Hablar ahora";
+                    status.innerText = "Llamada finalizada";
+                });
+
+                vapi.on('error', (e) => {
+                    errBox.style.display = "block";
+                    errBox.innerText = "Error de Vapi: " + JSON.stringify(e);
+                });
+
+            } catch (e) {
+                errBox.style.display = "block";
+                errBox.innerText = "Fallo crítico: " + e.message;
+            }
+        }
+
+        // Ejecutar cuando la página termine de cargar
+        window.onload = inicializar;
 
         btn.onclick = () => {
-            if (isActive) {
+            if (!vapi) return;
+            if (activa) {
                 vapi.stop();
             } else {
-                vapi.start(assistantId);
-                status.innerText = "Conectando...";
+                status.innerText = "Llamando...";
+                vapi.start(ASSISTANT_ID);
             }
         };
-
-        vapi.on('call-start', () => {
-            isActive = true;
-            btn.innerText = "Terminar Charla";
-            btn.classList.add('active');
-            status.innerText = "Escuchando... Di algo.";
-        });
-
-        vapi.on('call-end', () => {
-            isActive = false;
-            btn.innerText = "Hablar con el Personaje";
-            btn.classList.remove('active');
-            status.innerText = "Desconectado";
-        });
     </script>
 </body>
 </html>
