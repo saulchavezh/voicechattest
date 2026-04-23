@@ -5,143 +5,109 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat Personaje Histórico</title>
     
-    <script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web@latest/dist/vapi.browser.js"></script>
+    <script src="https://unpkg.com/@vapi-ai/web@latest/dist/vapi.browser.js"></script>
 
     <style>
-        :root {
-            --primary: #2563eb;
-            --danger: #dc2626;
-            --bg: #f8fafc;
-        }
+        :root { --primary: #2563eb; --danger: #dc2626; --bg: #f8fafc; }
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            height: 100vh; 
-            margin: 0; 
-            background-color: var(--bg);
-            color: #1e293b;
+            font-family: -apple-system, sans-serif; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            height: 100vh; margin: 0; background-color: var(--bg);
         }
         .container {
-            text-align: center;
-            background: white;
-            padding: 2.5rem;
-            border-radius: 24px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-            width: 85%;
-            max-width: 400px;
+            text-align: center; background: white; padding: 2.5rem;
+            border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 85%; max-width: 400px;
         }
-        h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
-        p { color: #64748b; margin-bottom: 2rem; font-size: 0.9rem; }
-        
-        #vapiButton {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 18px 40px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            width: 100%;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        button {
+            background-color: var(--primary); color: white; border: none;
+            padding: 18px 40px; font-size: 1.1rem; font-weight: 600;
+            border-radius: 50px; cursor: pointer; width: 100%; transition: 0.3s;
         }
-        #vapiButton:active { transform: scale(0.96); }
-        #vapiButton.active { background-color: var(--danger); box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2); }
-        
-        #status {
-            margin-top: 1.5rem;
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .error-log {
-            margin-top: 10px;
-            font-size: 0.7rem;
-            color: red;
-            display: none;
-        }
+        button.active { background-color: var(--danger); }
+        #status { margin-top: 1.5rem; font-size: 0.85rem; color: #94a3b8; font-weight: bold; }
+        #debug { color: red; font-size: 0.7rem; margin-top: 10px; display: none; border-top: 1px solid #eee; padding-top: 10px; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>Personaje Histórico</h1>
-        <p>Asegúrate de tener volumen y pulsa el botón para comenzar.</p>
-        
-        <button id="vapiButton">Iniciar Conversación</button>
-        <div id="status">Sistema: Desconectado</div>
-        <div id="debugLog" class="error-log"></div>
+        <h1 id="charName">Personaje Histórico</h1>
+        <p>Pulsa el botón para hablar</p>
+        <button id="vapiButton">Cargando sistema...</button>
+        <div id="status">ESTADO: INICIALIZANDO</div>
+        <div id="debug"></div>
     </div>
 
     <script>
-        // 1. CONFIGURACIÓN - REEMPLAZA ESTOS DOS VALORES
+        // 1. TUS CLAVES (Cópialas con cuidado)
         const PUBLIC_KEY = '30fad02a-d560-44bc-a6ae-d992ec97cb66'; 
         const ASSISTANT_ID = '110d7e91-85e0-401f-93b0-90697d22b5c3';
-
-        const btn = document.getElementById('vapiButton');
-        const statusText = document.getElementById('status');
-        const debugLog = document.getElementById('debugLog');
 
         let vapiInstance = null;
         let isCallActive = false;
 
-        // Función para mostrar errores en pantalla si fallan las llaves
-        function showError(msg) {
-            debugLog.style.display = "block";
-            debugLog.innerText = "Error detectado: " + msg;
-            console.error(msg);
-        }
+        const btn = document.getElementById('vapiButton');
+        const statusText = document.getElementById('status');
+        const debugDiv = document.getElementById('debug');
 
-        try {
-            // Inicializar Vapi
-            vapiInstance = new Vapi(PUBLIC_KEY);
-
-            // Escuchar eventos
-            vapiInstance.on('call-start', () => {
-                isCallActive = true;
-                btn.innerText = "Terminar Charla";
-                btn.classList.add('active');
-                statusText.innerText = "Estado: Conectado";
-                statusText.style.color = "#059669"; // Verde
-            });
-
-            vapiInstance.on('call-end', () => {
-                isCallActive = false;
-                btn.innerText = "Iniciar Conversación";
-                btn.classList.remove('active');
-                statusText.innerText = "Estado: Desconectado";
-                statusText.style.color = "#94a3b8";
-            });
-
-            vapiInstance.on('error', (e) => {
-                showError(JSON.stringify(e));
-                statusText.innerText = "Error de conexión";
-            });
-
-            // Lógica del botón
-            btn.onclick = async () => {
-                if (isCallActive) {
-                    vapiInstance.stop();
-                } else {
-                    statusText.innerText = "Estado: Conectando...";
-                    try {
-                        // Esto debería disparar el permiso del micrófono
-                        await vapiInstance.start(ASSISTANT_ID);
-                    } catch (err) {
-                        showError("No se pudo iniciar la llamada: " + err.message);
-                    }
+        // Esta función se ejecuta solo cuando TODO está cargado
+        window.onload = function() {
+            try {
+                // Intentamos detectar Vapi de dos formas posibles
+                const VapiConstructor = window.Vapi || (window.VapiClient ? window.VapiClient.Vapi : null);
+                
+                if (!VapiConstructor) {
+                    throw new Error("No se pudo encontrar la librería Vapi en el navegador.");
                 }
-            };
 
-        } catch (e) {
-            showError("Error al cargar el SDK: " + e.message);
-        }
+                vapiInstance = new VapiConstructor(PUBLIC_KEY);
+                btn.innerText = "Iniciar Conversación";
+                statusText.innerText = "ESTADO: LISTO";
+
+                // Configurar eventos
+                vapiInstance.on('call-start', () => {
+                    isCallActive = true;
+                    btn.innerText = "Terminar Charla";
+                    btn.classList.add('active');
+                    statusText.innerText = "ESTADO: EN LÍNEA";
+                });
+
+                vapiInstance.on('call-end', () => {
+                    isCallActive = false;
+                    btn.innerText = "Iniciar Conversación";
+                    btn.classList.remove('active');
+                    statusText.innerText = "ESTADO: DESCONECTADO";
+                });
+
+                vapiInstance.on('error', (e) => {
+                    console.error(e);
+                    debugDiv.style.display = "block";
+                    debugDiv.innerText = "Error de Vapi: " + (e.message || JSON.stringify(e));
+                });
+
+            } catch (err) {
+                btn.innerText = "Error de Carga";
+                debugDiv.style.display = "block";
+                debugDiv.innerText = err.message;
+            }
+        };
+
+        btn.onclick = async () => {
+            if (!vapiInstance) return;
+            
+            if (isCallActive) {
+                vapiInstance.stop();
+            } else {
+                statusText.innerText = "ESTADO: CONECTANDO...";
+                try {
+                    await vapiInstance.start(ASSISTANT_ID);
+                } catch (err) {
+                    debugDiv.style.display = "block";
+                    debugDiv.innerText = "Error al iniciar: " + err.message;
+                }
+            }
+        };
     </script>
 </body>
 </html>
