@@ -3,148 +3,67 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat de Voz Histórico</title>
+  <title>Voice Chat</title>
 
-  <!-- SDK oficial de Vapi -->
   <script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web/dist/index.min.js"></script>
-
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background: #111;
-      color: white;
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      text-align: center;
-    }
-
-    .container {
-      max-width: 400px;
-      padding: 30px;
-      border-radius: 20px;
-      background: #1e1e1e;
-      box-shadow: 0 0 20px rgba(255,255,255,0.08);
-    }
-
-    h1 {
-      margin-bottom: 10px;
-    }
-
-    p {
-      opacity: 0.8;
-      margin-bottom: 25px;
-    }
-
-    button {
-      background: #4CAF50;
-      border: none;
-      color: white;
-      padding: 16px 28px;
-      font-size: 18px;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-
-    button:hover {
-      background: #45a049;
-    }
-
-    button.stop {
-      background: #e53935;
-    }
-
-    #status {
-      margin-top: 20px;
-      font-size: 15px;
-      opacity: 0.9;
-    }
-  </style>
 </head>
-<body>
+<body style="font-family: Arial; text-align:center; margin-top:100px;">
 
-  <div class="container">
-    <h1>Conversación Histórica</h1>
-    <p>Habla con tu personaje histórico usando voz</p>
+<h1>Chat de Voz</h1>
 
-    <button id="startBtn">🎤 Iniciar conversación</button>
+<button id="start">Iniciar conversación</button>
 
-    <div id="status">Esperando...</div>
-  </div>
+<p id="status">Esperando...</p>
 
-  <script>
-    /*
-      IMPORTANTE:
-      Reemplaza esto con tu Public Key de Vapi
-    */
-    const PUBLIC_KEY = "30fad02a-d560-44bc-a6ae-d992ec97cb66";
+<script>
+const publicKey = "30fad02a-d560-44bc-a6ae-d992ec97cb66";
+const assistantId = "110d7e91-85e0-401f-93b0-90697d22b5c3";
 
-    /*
-      Reemplaza esto con el Assistant ID
-      (NO con el personaje solamente, sino con el assistant configurado)
-    */
-    const ASSISTANT_ID = "110d7e91-85e0-401f-93b0-90697d22b5c3";
+const button = document.getElementById("start");
+const status = document.getElementById("status");
 
-    const vapi = new Vapi(PUBLIC_KEY);
+const vapi = new Vapi(publicKey);
 
-    const startBtn = document.getElementById("startBtn");
-    const status = document.getElementById("status");
+let started = false;
 
-    let callActive = false;
+button.onclick = async () => {
+  try {
+    if (!started) {
+      status.innerText = "Iniciando...";
 
-    startBtn.addEventListener("click", async () => {
-      try {
-        if (!callActive) {
-          status.innerText = "Solicitando acceso al micrófono...";
+      await vapi.start(assistantId);
 
-          await vapi.start(ASSISTANT_ID);
+      started = true;
+      button.innerText = "Finalizar conversación";
+      status.innerText = "Conversación activa";
+    } else {
+      await vapi.stop();
 
-          callActive = true;
-          startBtn.innerText = "⛔ Finalizar conversación";
-          startBtn.classList.add("stop");
-          status.innerText = "Conversación iniciada";
-        } else {
-          await vapi.stop();
+      started = false;
+      button.innerText = "Iniciar conversación";
+      status.innerText = "Conversación finalizada";
+    }
+  } catch (err) {
+    console.error(err);
+    status.innerText = "ERROR: " + err.message;
+  }
+};
 
-          callActive = false;
-          startBtn.innerText = "🎤 Iniciar conversación";
-          startBtn.classList.remove("stop");
-          status.innerText = "Conversación finalizada";
-        }
-      } catch (error) {
-        console.error(error);
-        status.innerText = "Error al iniciar la conversación";
-      }
-    });
+vapi.on("call-start", () => {
+  status.innerText = "Llamada iniciada";
+});
 
-    vapi.on("call-start", () => {
-      status.innerText = "Llamada iniciada";
-    });
+vapi.on("call-end", () => {
+  status.innerText = "Llamada terminada";
+  started = false;
+  button.innerText = "Iniciar conversación";
+});
 
-    vapi.on("call-end", () => {
-      callActive = false;
-      startBtn.innerText = "🎤 Iniciar conversación";
-      startBtn.classList.remove("stop");
-      status.innerText = "Llamada finalizada";
-    });
-
-    vapi.on("speech-start", () => {
-      status.innerText = "El asistente está hablando...";
-    });
-
-    vapi.on("speech-end", () => {
-      status.innerText = "Tu turno para hablar";
-    });
-
-    vapi.on("error", (e) => {
-      console.error(e);
-      status.innerText = "Ocurrió un error";
-    });
-  </script>
+vapi.on("error", (e) => {
+  console.error(e);
+  status.innerText = "Error detectado";
+});
+</script>
 
 </body>
 </html>
