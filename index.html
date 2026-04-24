@@ -3,67 +3,60 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Voice Chat</title>
+  <title>Conversación Histórica</title>
 
-  <script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web/dist/index.min.js"></script>
-</head>
-<body style="font-family: Arial; text-align:center; margin-top:100px;">
-
-<h1>Chat de Voz</h1>
-
-<button id="start">Iniciar conversación</button>
-
-<p id="status">Esperando...</p>
-
-<script>
-const publicKey = "30fad02a-d560-44bc-a6ae-d992ec97cb66";
-const assistantId = "110d7e91-85e0-401f-93b0-90697d22b5c3";
-
-const button = document.getElementById("start");
-const status = document.getElementById("status");
-
-const vapi = new Vapi(publicKey);
-
-let started = false;
-
-button.onclick = async () => {
-  try {
-    if (!started) {
-      status.innerText = "Iniciando...";
-
-      await vapi.start(assistantId);
-
-      started = true;
-      button.innerText = "Finalizar conversación";
-      status.innerText = "Conversación activa";
-    } else {
-      await vapi.stop();
-
-      started = false;
-      button.innerText = "Iniciar conversación";
-      status.innerText = "Conversación finalizada";
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      text-align: center;
     }
-  } catch (err) {
-    console.error(err);
-    status.innerText = "ERROR: " + err.message;
-  }
-};
 
-vapi.on("call-start", () => {
-  status.innerText = "Llamada iniciada";
-});
+    .container {
+      max-width: 500px;
+      padding: 30px;
+    }
 
-vapi.on("call-end", () => {
-  status.innerText = "Llamada terminada";
-  started = false;
-  button.innerText = "Iniciar conversación";
-});
+    h1 {
+      margin-bottom: 10px;
+      font-size: 2rem;
+    }
 
-vapi.on("error", (e) => {
-  console.error(e);
-  status.innerText = "Error detectado";
-});
-</script>
+    p {
+      opacity: 0.8;
+      margin-bottom: 30px;
+    }
+
+    .widget-box {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Conversación con Personaje Histórico</h1>
+    <p>Presiona el micrófono para comenzar la conversación</p>
+
+    <div class="widget-box">
+      <elevenlabs-convai
+        agent-id="agent_2501kq03bmyaf1wtc7c1j37vxhe1">
+      </elevenlabs-convai>
+    </div>
+  </div>
+
+  <script
+    src="https://unpkg.com/@elevenlabs/convai-widget-embed"
+    async
+    type="text/javascript">
+  </script>
 
 </body>
 </html>
