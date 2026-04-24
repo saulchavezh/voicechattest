@@ -1,742 +1,150 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>Voces del Pasado</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat de Voz Histórico</title>
 
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IM+Fell+English:ital@0;1&family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet" />
+  <!-- SDK oficial de Vapi -->
+  <script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web/dist/index.min.js"></script>
 
   <style>
-    /* ─── VARIABLES ─────────────────────────────────────────── */
-    :root {
-      --ink:       #1a0e00;
-      --parchment: #f5e6c8;
-      --aged:      #d4b483;
-      --sepia:     #8b6914;
-      --gold:      #c8922a;
-      --gold-lt:   #e8b84b;
-      --dark:      #0d0700;
-      --shadow:    rgba(0,0,0,0.6);
-      --glow:      rgba(200,146,42,0.35);
-    }
-
-    /* ─── RESET & BASE ──────────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    html, body {
-      height: 100%;
-      font-family: 'IM Fell English', serif;
-      background: var(--dark);
-      color: var(--parchment);
-      overflow: hidden;
-    }
-
-    /* ─── BACKGROUND TEXTURE ────────────────────────────────── */
-    body::before {
-      content: '';
-      position: fixed; inset: 0;
-      background:
-        radial-gradient(ellipse at 20% 80%, #2a1505 0%, transparent 55%),
-        radial-gradient(ellipse at 80% 20%, #1e0c02 0%, transparent 55%),
-        radial-gradient(ellipse at 50% 50%, #140900 0%, #0d0700 100%);
-      z-index: 0;
-    }
-
-    /* Grain overlay */
-    body::after {
-      content: '';
-      position: fixed; inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-      background-size: 256px 256px;
-      opacity: 0.4;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    /* ─── LAYOUT ────────────────────────────────────────────── */
-    .stage {
-      position: relative;
-      z-index: 1;
-      height: 100dvh;
+    body {
+      margin: 0;
+      padding: 0;
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
       display: flex;
-      flex-direction: column;
+      justify-content: center;
       align-items: center;
-      justify-content: space-between;
-      padding: 2rem 1.5rem 2.5rem;
-      gap: 1rem;
-    }
-
-    /* ─── HEADER ────────────────────────────────────────────── */
-    .header {
+      height: 100vh;
       text-align: center;
-      width: 100%;
     }
 
-    .subtitle {
-      font-family: 'Cinzel Decorative', serif;
-      font-size: 0.6rem;
-      letter-spacing: 0.35em;
-      color: var(--gold);
-      text-transform: uppercase;
+    .container {
+      max-width: 400px;
+      padding: 30px;
+      border-radius: 20px;
+      background: #1e1e1e;
+      box-shadow: 0 0 20px rgba(255,255,255,0.08);
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    p {
       opacity: 0.8;
-      margin-bottom: 0.4rem;
+      margin-bottom: 25px;
     }
 
-    .title {
-      font-family: 'Playfair Display', serif;
-      font-size: clamp(1.6rem, 5vw, 2.4rem);
-      font-weight: 700;
-      color: var(--parchment);
-      line-height: 1.1;
-      text-shadow: 0 0 40px var(--glow);
-    }
-
-    .divider {
-      display: flex;
-      align-items: center;
-      gap: 0.8rem;
-      margin: 0.6rem auto 0;
-      width: fit-content;
-    }
-    .divider-line {
-      width: 60px;
-      height: 1px;
-      background: linear-gradient(to right, transparent, var(--gold));
-    }
-    .divider-line.right {
-      background: linear-gradient(to left, transparent, var(--gold));
-    }
-    .divider-ornament {
-      color: var(--gold);
-      font-size: 0.9rem;
-      line-height: 1;
-    }
-
-    /* ─── PORTRAIT ──────────────────────────────────────────── */
-    .portrait-section {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 1rem;
-      width: 100%;
-      min-height: 0;
-    }
-
-    .portrait-frame {
-      position: relative;
-      width: min(180px, 40vw);
-      aspect-ratio: 1;
-    }
-
-    /* Decorative frame rings */
-    .portrait-frame::before,
-    .portrait-frame::after {
-      content: '';
-      position: absolute;
-      border-radius: 50%;
-      border: 1px solid var(--gold);
-    }
-    .portrait-frame::before {
-      inset: -8px;
-      opacity: 0.4;
-      animation: spin-slow 20s linear infinite;
-    }
-    .portrait-frame::after {
-      inset: -16px;
-      opacity: 0.15;
-      animation: spin-slow 35s linear infinite reverse;
-    }
-
-    .avatar-circle {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 35%, #3d2008, #1a0900);
-      border: 2px solid var(--gold);
-      box-shadow:
-        0 0 0 1px rgba(200,146,42,0.2),
-        0 0 40px var(--glow),
-        inset 0 0 20px rgba(0,0,0,0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      position: relative;
-    }
-
-    /* Default icon (quill) shown when no image */
-    .avatar-icon {
-      font-size: clamp(3rem, 10vw, 5rem);
-      filter: sepia(1) brightness(0.8);
-      user-select: none;
-    }
-
-    /* Optional: replace with an actual <img> of the character */
-    /* .avatar-circle img { width:100%; height:100%; object-fit:cover; border-radius:50%; filter:sepia(0.4) contrast(1.1); } */
-
-    /* Pulse ring when speaking */
-    .pulse-ring {
-      position: absolute;
-      inset: -12px;
-      border-radius: 50%;
-      border: 2px solid var(--gold-lt);
-      opacity: 0;
-      animation: none;
-      pointer-events: none;
-    }
-
-    .portrait-frame.speaking .pulse-ring {
-      animation: pulse-out 1.2s ease-out infinite;
-    }
-    .portrait-frame.listening .avatar-circle {
-      box-shadow:
-        0 0 0 1px rgba(200,146,42,0.4),
-        0 0 60px rgba(200,146,42,0.5),
-        inset 0 0 20px rgba(0,0,0,0.5);
-    }
-
-    /* ─── CHARACTER NAME ─────────────────────────────────────── */
-    .character-name {
-      font-family: 'Playfair Display', serif;
-      font-size: clamp(1.1rem, 3.5vw, 1.5rem);
-      font-style: italic;
-      color: var(--aged);
-      text-align: center;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.6);
-    }
-
-    /* ─── STATUS AREA ────────────────────────────────────────── */
-    .status-area {
-      min-height: 3.5rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 0.4rem;
-      width: 100%;
-    }
-
-    .status-badge {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-family: 'Cinzel Decorative', serif;
-      font-size: 0.55rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--gold);
-      opacity: 0;
-      transition: opacity 0.4s;
-    }
-    .status-badge.visible { opacity: 1; }
-
-    .status-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--gold-lt);
-      animation: blink 1.2s ease-in-out infinite;
-    }
-
-    .transcript-bubble {
-      background: rgba(200,146,42,0.06);
-      border: 1px solid rgba(200,146,42,0.18);
-      border-radius: 12px;
-      padding: 0.7rem 1.1rem;
-      max-width: 320px;
-      font-size: 0.85rem;
-      line-height: 1.5;
-      color: var(--parchment);
-      text-align: center;
-      font-style: italic;
-      opacity: 0;
-      transition: opacity 0.5s;
-      min-height: 2.5rem;
-    }
-    .transcript-bubble.visible { opacity: 1; }
-
-    /* ─── CONTROLS ───────────────────────────────────────────── */
-    .controls {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1rem;
-      width: 100%;
-    }
-
-    /* Main call button */
-    .btn-call {
-      position: relative;
-      width: min(80px, 18vw);
-      aspect-ratio: 1;
-      border-radius: 50%;
+    button {
+      background: #4CAF50;
       border: none;
-      cursor: pointer;
-      background: radial-gradient(circle at 40% 35%, #e8b84b, #9a6a10);
-      box-shadow:
-        0 0 0 1px rgba(200,146,42,0.4),
-        0 4px 24px rgba(200,146,42,0.3),
-        0 2px 4px rgba(0,0,0,0.8);
-      transition: transform 0.15s, box-shadow 0.15s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .btn-call:active { transform: scale(0.93); }
-
-    .btn-call:hover {
-      box-shadow:
-        0 0 0 1px rgba(200,146,42,0.6),
-        0 4px 36px rgba(200,146,42,0.5),
-        0 2px 4px rgba(0,0,0,0.8);
-    }
-
-    .btn-call.active {
-      background: radial-gradient(circle at 40% 35%, #c0392b, #7a1a12);
-      box-shadow:
-        0 0 0 1px rgba(192,57,43,0.5),
-        0 4px 24px rgba(192,57,43,0.4),
-        0 2px 4px rgba(0,0,0,0.8);
-    }
-
-    .btn-call svg {
-      width: 36%;
-      height: 36%;
-      fill: var(--dark);
-    }
-
-    /* Outer decorative ring on button */
-    .btn-call::before {
-      content: '';
-      position: absolute;
-      inset: -6px;
-      border-radius: 50%;
-      border: 1px solid rgba(200,146,42,0.25);
-    }
-
-    .btn-label {
-      font-family: 'Cinzel Decorative', serif;
-      font-size: 0.55rem;
-      letter-spacing: 0.25em;
-      text-transform: uppercase;
-      color: var(--aged);
-      opacity: 0.7;
-    }
-
-    /* ─── FOOTER ─────────────────────────────────────────────── */
-    .footer {
-      text-align: center;
-      font-size: 0.6rem;
-      color: var(--sepia);
-      opacity: 0.5;
-      letter-spacing: 0.1em;
-    }
-
-    /* ─── MODAL (API key setup) ──────────────────────────────── */
-    .modal-overlay {
-      position: fixed; inset: 0;
-      z-index: 10;
-      background: rgba(0,0,0,0.85);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 1.5rem;
-      backdrop-filter: blur(4px);
-    }
-    .modal-overlay.hidden { display: none; }
-
-    .modal {
-      background: linear-gradient(160deg, #1e0f03, #130900);
-      border: 1px solid var(--gold);
+      color: white;
+      padding: 16px 28px;
+      font-size: 18px;
       border-radius: 12px;
-      padding: 2rem 1.5rem;
-      max-width: 380px;
-      width: 100%;
-      box-shadow: 0 0 60px rgba(200,146,42,0.2);
-    }
-
-    .modal h2 {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.25rem;
-      color: var(--parchment);
-      margin-bottom: 0.3rem;
-    }
-    .modal p {
-      font-size: 0.8rem;
-      color: var(--aged);
-      margin-bottom: 1.5rem;
-      line-height: 1.6;
-      opacity: 0.8;
-    }
-
-    .field {
-      margin-bottom: 1rem;
-    }
-    .field label {
-      display: block;
-      font-family: 'Cinzel Decorative', serif;
-      font-size: 0.5rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--gold);
-      margin-bottom: 0.4rem;
-    }
-    .field input, .field textarea {
-      width: 100%;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(200,146,42,0.3);
-      border-radius: 6px;
-      padding: 0.6rem 0.8rem;
-      color: var(--parchment);
-      font-family: 'IM Fell English', serif;
-      font-size: 0.85rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .field input:focus, .field textarea:focus {
-      border-color: var(--gold);
-    }
-    .field textarea { resize: vertical; min-height: 60px; }
-
-    .btn-save {
-      width: 100%;
-      padding: 0.75rem;
-      background: linear-gradient(135deg, #c8922a, #9a6a10);
-      border: none;
-      border-radius: 6px;
-      color: var(--dark);
-      font-family: 'Cinzel Decorative', serif;
-      font-size: 0.65rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
       cursor: pointer;
-      transition: opacity 0.2s;
-      margin-top: 0.5rem;
-    }
-    .btn-save:hover { opacity: 0.85; }
-
-    /* ─── KEYFRAMES ──────────────────────────────────────────── */
-    @keyframes spin-slow {
-      to { transform: rotate(360deg); }
-    }
-    @keyframes pulse-out {
-      0%   { opacity: 0.8; transform: scale(1); }
-      100% { opacity: 0;   transform: scale(1.5); }
-    }
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0.3; }
-    }
-    @keyframes fade-in {
-      from { opacity: 0; transform: translateY(6px); }
-      to   { opacity: 1; transform: translateY(0); }
+      transition: 0.2s;
     }
 
-    /* ─── VOLUME BARS ────────────────────────────────────────── */
-    .vol-bars {
-      display: flex;
-      align-items: flex-end;
-      gap: 3px;
-      height: 20px;
-      opacity: 0;
-      transition: opacity 0.3s;
+    button:hover {
+      background: #45a049;
     }
-    .vol-bars.visible { opacity: 1; }
-    .vol-bar {
-      width: 4px;
-      border-radius: 2px;
-      background: var(--gold-lt);
-      animation: vol-bounce 0.7s ease-in-out infinite alternate;
-    }
-    .vol-bar:nth-child(1) { animation-delay: 0.0s; height: 30%; }
-    .vol-bar:nth-child(2) { animation-delay: 0.1s; height: 70%; }
-    .vol-bar:nth-child(3) { animation-delay: 0.2s; height: 100%; }
-    .vol-bar:nth-child(4) { animation-delay: 0.1s; height: 60%; }
-    .vol-bar:nth-child(5) { animation-delay: 0.05s; height: 25%; }
 
-    @keyframes vol-bounce {
-      from { transform: scaleY(0.3); }
-      to   { transform: scaleY(1); }
+    button.stop {
+      background: #e53935;
+    }
+
+    #status {
+      margin-top: 20px;
+      font-size: 15px;
+      opacity: 0.9;
     }
   </style>
 </head>
 <body>
 
-  <!-- ── SETUP MODAL ── -->
-  <div class="modal-overlay" id="modalOverlay">
-    <div class="modal">
-      <h2>⚙ Configuración</h2>
-      <p>Ingresa tus credenciales de VAPI para activar la conversación con el personaje histórico.</p>
+  <div class="container">
+    <h1>Conversación Histórica</h1>
+    <p>Habla con tu personaje histórico usando voz</p>
 
-      <div class="field">
-        <label>VAPI Public Key</label>
-        <input type="password" id="inputPublicKey" placeholder="pk_xxxxxxxxxxxxxxxx" />
-      </div>
+    <button id="startBtn">🎤 Iniciar conversación</button>
 
-      <div class="field">
-        <label>Assistant ID</label>
-        <input type="text" id="inputAssistantId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
-      </div>
-
-      <div class="field">
-        <label>Nombre del Personaje</label>
-        <input type="text" id="inputCharName" placeholder="Ej. Benito Juárez" />
-      </div>
-
-      <button class="btn-save" id="btnSave">Iniciar Portal ✦</button>
-    </div>
+    <div id="status">Esperando...</div>
   </div>
-
-  <!-- ── MAIN STAGE ── -->
-  <div class="stage">
-
-    <!-- Header -->
-    <header class="header">
-      <p class="subtitle">✦ Crónicas del Tiempo ✦</p>
-      <h1 class="title">Voces del Pasado</h1>
-      <div class="divider">
-        <span class="divider-line"></span>
-        <span class="divider-ornament">❧</span>
-        <span class="divider-line right"></span>
-      </div>
-    </header>
-
-    <!-- Portrait -->
-    <section class="portrait-section">
-      <div class="portrait-frame" id="portraitFrame">
-        <div class="pulse-ring"></div>
-        <div class="avatar-circle" id="avatarCircle">
-          <span class="avatar-icon" id="avatarIcon">🪶</span>
-        </div>
-      </div>
-
-      <h2 class="character-name" id="characterName">— Personaje Histórico —</h2>
-
-      <!-- Volume visualizer -->
-      <div class="vol-bars" id="volBars">
-        <div class="vol-bar"></div>
-        <div class="vol-bar"></div>
-        <div class="vol-bar"></div>
-        <div class="vol-bar"></div>
-        <div class="vol-bar"></div>
-      </div>
-    </section>
-
-    <!-- Status + Transcript -->
-    <div class="status-area">
-      <div class="status-badge" id="statusBadge">
-        <span class="status-dot"></span>
-        <span id="statusText">Conectando…</span>
-      </div>
-      <div class="transcript-bubble" id="transcriptBubble"></div>
-    </div>
-
-    <!-- Controls -->
-    <div class="controls">
-      <button class="btn-call" id="btnCall" disabled>
-        <!-- Microphone icon -->
-        <svg id="iconMic" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 1a4 4 0 0 1 4 4v7a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-2 4v7a2 2 0 0 0 4 0V5a2 2 0 0 0-4 0zm-3 7a5 5 0 0 0 10 0h2a7 7 0 0 1-6 6.93V21h-2v-2.07A7 7 0 0 1 5 12H7z"/>
-        </svg>
-        <!-- End call icon (hidden by default) -->
-        <svg id="iconEnd" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:none">
-          <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/>
-        </svg>
-      </button>
-      <span class="btn-label" id="btnLabel">Pulsa para hablar</span>
-    </div>
-
-    <footer class="footer">
-      Impulsado por VAPI · Inteligencia Artificial de Voz
-    </footer>
-
-  </div>
-
-  <!-- VAPI Web SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/@vapi-ai/web/dist/vapi.iife.js"></script>
 
   <script>
-    /* ════════════════════════════════════════════════════════
-       CONFIGURACIÓN  —  edita estos valores directamente
-       o déjalos en blanco para que aparezca el modal.
-    ════════════════════════════════════════════════════════ */
-    const CONFIG = {
-      publicKey:   '30fad02a-d560-44bc-a6ae-d992ec97cb66',   // Tu VAPI Public Key
-      assistantId: '110d7e91-85e0-401f-93b0-90697d22b5c3',   // Assistant ID del personaje
-      charName:    'Leonardo Da Vinci',   // Nombre visible del personaje
-      charEmoji:   '🪶', // Emoji representativo (opcional)
-    };
-    /* ════════════════════════════════════════════════════════ */
+    /*
+      IMPORTANTE:
+      Reemplaza esto con tu Public Key de Vapi
+    */
+    const PUBLIC_KEY = "30fad02a-d560-44bc-a6ae-d992ec97cb66";
 
-    let vapi = null;
+    /*
+      Reemplaza esto con el Assistant ID
+      (NO con el personaje solamente, sino con el assistant configurado)
+    */
+    const ASSISTANT_ID = "110d7e91-85e0-401f-93b0-90697d22b5c3";
+
+    const vapi = new Vapi(PUBLIC_KEY);
+
+    const startBtn = document.getElementById("startBtn");
+    const status = document.getElementById("status");
+
     let callActive = false;
 
-    // ── DOM refs ──────────────────────────────────────────────
-    const modalOverlay   = document.getElementById('modalOverlay');
-    const btnSave        = document.getElementById('btnSave');
-    const inputPublicKey = document.getElementById('inputPublicKey');
-    const inputAssistId  = document.getElementById('inputAssistantId');
-    const inputCharName  = document.getElementById('inputCharName');
-
-    const portraitFrame  = document.getElementById('portraitFrame');
-    const characterName  = document.getElementById('characterName');
-    const avatarIcon     = document.getElementById('avatarIcon');
-    const btnCall        = document.getElementById('btnCall');
-    const btnLabel       = document.getElementById('btnLabel');
-    const iconMic        = document.getElementById('iconMic');
-    const iconEnd        = document.getElementById('iconEnd');
-    const statusBadge    = document.getElementById('statusBadge');
-    const statusText     = document.getElementById('statusText');
-    const transcriptBubble = document.getElementById('transcriptBubble');
-    const volBars        = document.getElementById('volBars');
-
-    // ── Init ──────────────────────────────────────────────────
-    window.addEventListener('load', () => {
-      // If config is hardcoded, skip modal
-      if (CONFIG.publicKey && CONFIG.assistantId) {
-        applyConfig(CONFIG.publicKey, CONFIG.assistantId, CONFIG.charName, CONFIG.charEmoji);
-      } else {
-        // Try localStorage
-        const saved = JSON.parse(localStorage.getItem('vapiConfig') || 'null');
-        if (saved?.publicKey && saved?.assistantId) {
-          applyConfig(saved.publicKey, saved.assistantId, saved.charName, saved.charEmoji);
-        }
-        // else modal stays open
-      }
-    });
-
-    btnSave.addEventListener('click', () => {
-      const pk   = inputPublicKey.value.trim();
-      const aid  = inputAssistId.value.trim();
-      const name = inputCharName.value.trim();
-      if (!pk || !aid) {
-        alert('Por favor ingresa la Public Key y el Assistant ID.');
-        return;
-      }
-      localStorage.setItem('vapiConfig', JSON.stringify({ publicKey: pk, assistantId: aid, charName: name }));
-      applyConfig(pk, aid, name, '🪶');
-    });
-
-    function applyConfig(pk, aid, name, emoji) {
-      CONFIG.publicKey   = pk;
-      CONFIG.assistantId = aid;
-      CONFIG.charName    = name || 'Personaje Histórico';
-      CONFIG.charEmoji   = emoji || '🪶';
-
-      characterName.textContent = `— ${CONFIG.charName} —`;
-      avatarIcon.textContent    = CONFIG.charEmoji;
-
-      modalOverlay.classList.add('hidden');
-      initVapi();
-    }
-
-    // ── VAPI setup ────────────────────────────────────────────
-    function initVapi() {
+    startBtn.addEventListener("click", async () => {
       try {
-        vapi = new Vapi(CONFIG.publicKey);
-        bindVapiEvents();
-        btnCall.disabled = false;
-        setStatus('Listo · Pulsa el micrófono', false);
-      } catch (err) {
-        setStatus('Error al inicializar VAPI', false);
-        console.error(err);
-      }
-    }
+        if (!callActive) {
+          status.innerText = "Solicitando acceso al micrófono...";
 
-    function bindVapiEvents() {
-      vapi.on('call-start', () => {
-        callActive = true;
-        setCallUI(true);
-        setStatus('En conversación', true);
-        showTranscript('');
-      });
+          await vapi.start(ASSISTANT_ID);
 
-      vapi.on('call-end', () => {
-        callActive = false;
-        setCallUI(false);
-        setStatus('Llamada finalizada', false);
-        portraitFrame.classList.remove('speaking', 'listening');
-        volBars.classList.remove('visible');
-        setTimeout(() => setStatus('Listo · Pulsa el micrófono', false), 3000);
-      });
+          callActive = true;
+          startBtn.innerText = "⛔ Finalizar conversación";
+          startBtn.classList.add("stop");
+          status.innerText = "Conversación iniciada";
+        } else {
+          await vapi.stop();
 
-      vapi.on('speech-start', () => {
-        // The AI is speaking
-        portraitFrame.classList.add('speaking');
-        portraitFrame.classList.remove('listening');
-        volBars.classList.add('visible');
-        setStatus(`${CONFIG.charName} habla…`, true);
-      });
-
-      vapi.on('speech-end', () => {
-        portraitFrame.classList.remove('speaking');
-        portraitFrame.classList.add('listening');
-        volBars.classList.remove('visible');
-        setStatus('Escuchando…', true);
-      });
-
-      vapi.on('message', (msg) => {
-        // Show last AI transcript
-        if (msg.type === 'transcript' && msg.role === 'assistant' && msg.transcriptType === 'final') {
-          showTranscript(`"${msg.transcript}"`);
+          callActive = false;
+          startBtn.innerText = "🎤 Iniciar conversación";
+          startBtn.classList.remove("stop");
+          status.innerText = "Conversación finalizada";
         }
-      });
-
-      vapi.on('error', (err) => {
-        console.error('VAPI error:', err);
-        setStatus('Error de conexión', false);
-        setCallUI(false);
-        callActive = false;
-      });
-    }
-
-    // ── Call toggle ───────────────────────────────────────────
-    btnCall.addEventListener('click', async () => {
-      if (!vapi) return;
-
-      if (!callActive) {
-        try {
-          btnCall.disabled = true;
-          btnLabel.textContent = 'Conectando…';
-          await vapi.start(CONFIG.assistantId);
-          // call-start event handles the rest
-        } catch (err) {
-          console.error(err);
-          setStatus('No se pudo iniciar la llamada', false);
-          btnCall.disabled = false;
-          btnLabel.textContent = 'Pulsa para hablar';
-        }
-      } else {
-        vapi.stop();
+      } catch (error) {
+        console.error(error);
+        status.innerText = "Error al iniciar la conversación";
       }
     });
 
-    // ── UI helpers ────────────────────────────────────────────
-    function setCallUI(active) {
-      btnCall.classList.toggle('active', active);
-      btnCall.disabled = false;
-      iconMic.style.display = active ? 'none' : '';
-      iconEnd.style.display = active ? ''     : 'none';
-      btnLabel.textContent  = active ? 'Toca para colgar' : 'Pulsa para hablar';
-    }
+    vapi.on("call-start", () => {
+      status.innerText = "Llamada iniciada";
+    });
 
-    function setStatus(text, visible) {
-      statusText.textContent = text;
-      statusBadge.classList.toggle('visible', visible);
-      if (!visible) statusBadge.style.opacity = visible ? '1' : '0.5';
-    }
+    vapi.on("call-end", () => {
+      callActive = false;
+      startBtn.innerText = "🎤 Iniciar conversación";
+      startBtn.classList.remove("stop");
+      status.innerText = "Llamada finalizada";
+    });
 
-    function showTranscript(text) {
-      transcriptBubble.textContent = text;
-      transcriptBubble.classList.toggle('visible', text.length > 0);
-    }
+    vapi.on("speech-start", () => {
+      status.innerText = "El asistente está hablando...";
+    });
+
+    vapi.on("speech-end", () => {
+      status.innerText = "Tu turno para hablar";
+    });
+
+    vapi.on("error", (e) => {
+      console.error(e);
+      status.innerText = "Ocurrió un error";
+    });
   </script>
+
 </body>
 </html>
